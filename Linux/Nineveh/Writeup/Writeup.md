@@ -402,6 +402,53 @@ Since we know something is actively making these files, we can use `pspy64` to s
 
 ![60518e25f9230c11a8dc79a233a8a881.png](../_resources/60518e25f9230c11a8dc79a233a8a881.png)
 
-![a7b180f4140a7d1042a317dbae2f5919.png](../_resources/a7b180f4140a7d1042a317dbae2f5919.png)
+![f4cb3f7ffd7b0bfa6ddbff88554cef84.png](../_resources/f4cb3f7ffd7b0bfa6ddbff88554cef84.png)
+We found that `root` is executing `/usr/bin/chkrootkit` as well as `/root/vulnScan.sh` and is responsible for the reports!
 
-We found that `root` is executing `/usr/bin/chkrootkit` and doing is causing the shenanigans with the reports!
+`chkrootkit` is owned by `root` but is executable by anyone... Hmmm.
+
+![9e6d804d13f5b43bece6f4c2cc4cbcd0.png](../_resources/9e6d804d13f5b43bece6f4c2cc4cbcd0.png)
+
+As I was starting to run out of ideas, I decided to run `searchsploit` against the binary name to see if there are any results. Luckily for us, there is!
+![b4d22179202b931d4bbe427aa77f68fd.png](../_resources/b4d22179202b931d4bbe427aa77f68fd.png)
+
+Since I am working towards the OSCP, I will try the non-metasploit route.
+
+![a6452b5e4f821969fe87f13622a8070a.png](../_resources/a6452b5e4f821969fe87f13622a8070a.png)
+
+Sounds straightforward enough... Let's make a file named `update` that will execute our reverse shell back to us.
+![e2ca6d7541414dc8ad9c9763c836240a.png](../_resources/e2ca6d7541414dc8ad9c9763c836240a.png)
+
+This goes in `/tmp` as an executable per poc repro steps. 
+![11c29d304aa6055928e83af18577e226.png](../_resources/11c29d304aa6055928e83af18577e226.png)
+
+![a5cf9a87f27160f6f3074aabcfe09803.png](../_resources/a5cf9a87f27160f6f3074aabcfe09803.png)
+
+Wait a minute or less and...
+![a0fc8ad389fb232434be34d0fd984abe.png](../_resources/a0fc8ad389fb232434be34d0fd984abe.png)
+We are root! Time to collect our flags!
+
+![flags.png](../_resources/flags.png)
+
+Now, after reading writeups and watching IppSec's video on this box, I realized this was not the intended route to root. The intended way was actually through port knocking, which I did discover, although the one thing I did miss was a hidden directory on the https site; `/secure_notes`. Interestingly enough, this path is in the wordlist I used with `Feroxbuster` so I am not sure why this wasn't caught. After using the same wordlist with `gobuster`, the hidden directory is found which exposes user `amrois` public key to be used for SSH after port knocking as we did earlier.
+
+After a long while, `gobuster` did indeed find `/secure_notes`. My only guess is that `feroxbuster` was scanning too fast, resulting in a miss. Lesson learned here is to be patient and maybe try multiple tools for the same thing :) 
+
+![2f7865a95c0286f90202a396f330cac1.png](../_resources/2f7865a95c0286f90202a396f330cac1.png)
+![9c9603836d83aeaf9fa55eaea597386d.png](../_resources/9c9603836d83aeaf9fa55eaea597386d.png)
+![3bad095646d64f832f918460ab720a22.png](../_resources/3bad095646d64f832f918460ab720a22.png)
+
+Extra extra credit:
+
+I was stubborn and wanted `feroxbuster` to work for my directory busting. I ended up running things again with `--thorough` which takes much longer, but is way more thorough *wink*. Always check the `-h` or `--help` menu!
+
+`feroxbuster -u https://nineveh.htb -o https-scan2 -k -w /opt/SecLists/Discovery/Web-Content/directory-list-lowercase-2.3-medium.txt --thorough`  -->
+```
+$ cat https-scan2                                
+200      GET     2246l    12546w   560852c https://nineveh.htb/ninevehForAll.png
+200      GET        1l        3w       49c https://nineveh.htb/
+301      GET        9l       28w      309c https://nineveh.htb/db => https://nineveh.htb/db/
+403      GET       11l       32w      300c https://nineveh.htb/server-status
+301      GET        9l       28w      319c https://nineveh.htb/secure_notes => https://nineveh.htb/secure_notes/
+```
+
