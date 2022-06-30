@@ -271,3 +271,137 @@ With the php web shell as the field.
 This works because the `include()` function being used executes the php code from the field of our newly created db.
 
 ![1959c2f10e4551300655b27f1a2e7892.png](../_resources/1959c2f10e4551300655b27f1a2e7892.png)
+
+Now let's try to go from web shell to reverse shell using the OpenBSD `nc` shell from: [https://highon.coffee/blog/reverse-shell-cheat-sheet/](https://highon.coffee/blog/reverse-shell-cheat-sheet/)
+![0a139a3e2389cf124d6c56f28f25af2c.png](../_resources/0a139a3e2389cf124d6c56f28f25af2c.png)
+![481da39baa7f9c64d38fdc0f00e0b658.png](../_resources/481da39baa7f9c64d38fdc0f00e0b658.png)
+We got a shell! But unfortunately it seems like python (or socat) isn't installed on this box which means we will not be upgrading our TTY today. Perl is on the box, but the TTY upgrade method using perl did not work for me, so I will just use the dumb shell :)
+(Upgrade shell reference: https://zweilosec.github.io/posts/upgrade-linux-shell/)
+
+I'll go ahead and move LinPEAS over to `/dev/shm` and let the script work its magic...
+![627efc0eefe5d95daaf176cc68c8e6d8.png](../_resources/627efc0eefe5d95daaf176cc68c8e6d8.png)
+
+A number of things stood out to me from the output:
+
+1.) Port 22 is active
+![d2ed0f92d63e23377cee6fef8a6a9296.png](../_resources/d2ed0f92d63e23377cee6fef8a6a9296.png)
+
+2.) `amrois` is a user
+![79a343dc352ce547c17fd739ef1be5ec.png](../_resources/79a343dc352ce547c17fd739ef1be5ec.png)
+
+3.) There is a Knockd file
+![f71fea83b1f814e4b30f76cf06329385.png](../_resources/f71fea83b1f814e4b30f76cf06329385.png)
+
+4.) `amrois` has a mail directory
+![02446ff93ea578080093d541dba7e2b4.png](../_resources/02446ff93ea578080093d541dba7e2b4.png)
+
+5.) There is potentially some interesting stuff in the root directory
+![ae705834e7dfc574d3d371c4cd7a8e35.png](../_resources/ae705834e7dfc574d3d371c4cd7a8e35.png)
+
+I have heard of port knocking but have never came across any scenario which actually required it. After some reading, I came across this helpful article:
+https://www.howtogeek.com/442733/how-to-use-port-knocking-on-linux-and-why-you-shouldnt/
+
+I check `knockd.conf` and see the start sequence to open port 22 is `571, 290, 911`.
+
+![c4c7c19f8312ae495cb2076f24563826.png](../_resources/c4c7c19f8312ae495cb2076f24563826.png)
+
+Then install `knockd` and knock...
+
+![07437fa58ede85e22dc484e3ae0d964f.png](../_resources/07437fa58ede85e22dc484e3ae0d964f.png)
+
+Followed by a quick `nmap` scan on port 22:
+![4fd1af6c77b99ce7e705097beab35f97.png](../_resources/4fd1af6c77b99ce7e705097beab35f97.png)
+
+And it is now there! Just for grins, I try ssh'ing without a password or key and see that I was not asked for a password.
+![ec700218e7ed74a3e77ebf9216ba65bc.png](../_resources/ec700218e7ed74a3e77ebf9216ba65bc.png)
+
+This leads me to believe that in order to escalate priveleges to `amrois`, we need to either steal their private key or add ours to their `authorized_keys` file.
+
+Going back to the mail for `amrois` we found, there is this email which also reveals the port knocking sequence in case the config file was not found.
+![c0308b071ca677799198d1453d4246e9.png](../_resources/c0308b071ca677799198d1453d4246e9.png)
+
+The last thing we haven't yet checked are those interesting files in the root directory.
+![d039933b48a73f327fb3e5e0732de4b6.png](../_resources/d039933b48a73f327fb3e5e0732de4b6.png)
+
+Out of the three items above, the `report` directory owned by user and group `amrois` sounds interesting. We take a look and find some text files that were all made today within seconds apart.
+![ebfa6acc0b7cebf8a6da78267848a83e.png](../_resources/ebfa6acc0b7cebf8a6da78267848a83e.png)
+
+Interestingly enough, at first glance it seems like these reports are coming from a vulnerability/virus scan of some sort? We can see our `ninevehNotes.php` in the first report being flagged as suspicious:
+```
+$ cat report-22-06-29:18:30.txt
+ROOTDIR is `/'
+Checking `amd'... not found
+Checking `basename'... not infected
+Checking `biff'... not found
+Checking `chfn'... not infected
+Checking `chsh'... not infected
+Checking `cron'... not infected
+Checking `crontab'... not infected
+Checking `date'... not infected
+Checking `du'... not infected
+Checking `dirname'... not infected
+Checking `echo'... not infected
+Checking `egrep'... not infected
+Checking `env'... not infected
+Checking `find'... not infected
+Checking `fingerd'... not found
+Checking `gpm'... not found
+Checking `grep'... not infected
+Checking `hdparm'... not infected
+Checking `su'... not infected
+Checking `ifconfig'... not infected
+Checking `inetd'... not tested
+Checking `inetdconf'... not found
+Checking `identd'... not found
+Checking `init'... not infected
+Checking `killall'... not infected
+Checking `ldsopreload'... can't exec ./strings-static, not tested
+Checking `login'... not infected
+Checking `ls'... not infected
+Checking `lsof'... not infected
+Checking `mail'... not found
+Checking `mingetty'... not found
+Checking `netstat'... not infected
+Checking `named'... not found
+Checking `passwd'... not infected
+
+[...]
+
+Searching for Anonoying rootkit default files and dirs... nothing found
+Searching for ZK rootkit default files and dirs... nothing found
+Searching for ShKit rootkit default files and dirs... nothing found
+Searching for AjaKit rootkit default files and dirs... nothing found
+Searching for zaRwT rootkit default files and dirs... nothing found
+Searching for Madalin rootkit default files... nothing found
+Searching for Fu rootkit default files... nothing found
+Searching for ESRK rootkit default files... nothing found
+Searching for rootedoor... nothing found
+Searching for ENYELKM rootkit default files... nothing found
+Searching for common ssh-scanners default files... nothing found
+Searching for suspect PHP files... 
+/var/tmp/ninevehNotes.php
+
+Searching for anomalies in shell history files... Warning: `//root/.bash_history' is linked to another file
+Checking `asp'... not infected
+Checking `bindshell'... not infected
+Checking `lkm'... not tested: can't exec 
+Checking `rexedcs'... not found
+Checking `sniffer'... not tested: can't exec ./ifpromisc
+Checking `w55808'... not infected
+Checking `wted'... not tested: can't exec ./chkwtmp
+Checking `scalper'... not infected
+Checking `slapper'... not infected
+Checking `z2'... not tested: can't exec ./chklastlog
+Checking `chkutmp'... not tested: can't exec ./chkutmp
+Checking `OSX_RSPLUG'... not infected
+```
+
+After checking a couple more of these, I realize they are all very similar and something is actively creating and deleting these reports.  
+
+Since we know something is actively making these files, we can use `pspy64` to see what is being ran on the box. 
+
+![60518e25f9230c11a8dc79a233a8a881.png](../_resources/60518e25f9230c11a8dc79a233a8a881.png)
+
+![a7b180f4140a7d1042a317dbae2f5919.png](../_resources/a7b180f4140a7d1042a317dbae2f5919.png)
+
+We found that `root` is executing `/usr/bin/chkrootkit` and doing is causing the shenanigans with the reports!
