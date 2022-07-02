@@ -129,89 +129,120 @@ $ nikto -h http://solidstate.htb -o solidstate4nikto.txt
 ```
 
 ## Website
-![c1e84e793e1841a4958ce9c350fbb7d6.png](../_resources/c1e84e793e1841a4958ce9c350fbb7d6.png)
+![c1e84e793e1841a4958ce9c350fbb7d6.png](../_resources/c1e84e793e1841a4958ce9c350fbb7d6-1.png)
 
 There is the email address that nmap returned from its vuln-scan.
-![239bee944000216c4a422f491e167ae9.png](../_resources/239bee944000216c4a422f491e167ae9.png)
+![239bee944000216c4a422f491e167ae9.png](../_resources/239bee944000216c4a422f491e167ae9-1.png)
 
 `/assets` exists, although not much going on in there.
-![71e7df4458d6031b52810aa09a6f1557.png](../_resources/71e7df4458d6031b52810aa09a6f1557.png)
+![71e7df4458d6031b52810aa09a6f1557.png](../_resources/71e7df4458d6031b52810aa09a6f1557-1.png)
 
 We can telnet to port 110, but trying a couple different basic passwords did not work for authentication.
-![e84abebb3babbce6c3895903dff1ebd4.png](../_resources/e84abebb3babbce6c3895903dff1ebd4.png)
+![e84abebb3babbce6c3895903dff1ebd4.png](../_resources/e84abebb3babbce6c3895903dff1ebd4-1.png)
 
 ## POP3
 Referencing https://book.hacktricks.xyz/network-services-pentesting/pentesting-pop, I telnet to port 110 and send a USER command which returns  `+OK solidstate POP3 server (JAMES POP3 Server 2.3.2)` 
-![7d7229173b0fafffed9f89af644aea6c.png](../_resources/7d7229173b0fafffed9f89af644aea6c.png)
+![7d7229173b0fafffed9f89af644aea6c.png](../_resources/7d7229173b0fafffed9f89af644aea6c-1.png)
 
 `searchsploit` returns a few different hits for the version of this POP3 server being used.
-![6a2bd8b50eda15e79b3c40ba515cb552.png](../_resources/6a2bd8b50eda15e79b3c40ba515cb552.png)
+![6a2bd8b50eda15e79b3c40ba515cb552.png](../_resources/6a2bd8b50eda15e79b3c40ba515cb552-1.png)
 
 I do some reading on CVE-2015-7611 and log into the administration tool using the default credentials `root:root` which lets us view all users on the server and even change their passwords to `password`! (I created the malicious user early from the exploit which probably should've waited until we had a better idea of what's going on but oh well)
 (ref: https://crimsonglow.ca/~kjiwa/2016/06/exploiting-apache-james-2.3.2.html)
-![c93af8500e7fc1d225c37b1292926336.png](../_resources/c93af8500e7fc1d225c37b1292926336.png)
-![f1876e41218c22d300674449e82c5292.png](../_resources/f1876e41218c22d300674449e82c5292.png)
+![c93af8500e7fc1d225c37b1292926336.png](../_resources/c93af8500e7fc1d225c37b1292926336-1.png)
+![f1876e41218c22d300674449e82c5292.png](../_resources/f1876e41218c22d300674449e82c5292-1.png)
 
 After connecting to everyones mail one by one, we find that user `james` was instructed to send a temporary password to user `mindy` .
-![9f6fa8a430419ac15327de995bf647cd.png](../_resources/9f6fa8a430419ac15327de995bf647cd.png)
+![9f6fa8a430419ac15327de995bf647cd.png](../_resources/9f6fa8a430419ac15327de995bf647cd-1.png)
 
 So we check user `mindy` mail and find that her temporary password is `P@55W0rd1!2@`
-![3a6ee720886de3082cc82588140a5967.png](../_resources/3a6ee720886de3082cc82588140a5967.png)
+![3a6ee720886de3082cc82588140a5967.png](../_resources/3a6ee720886de3082cc82588140a5967-1.png)
 
 From reading the exploit details on `50347.py`, we know the payload will be executed when a user logs in through ssh. I already have my netcat listener so we will try ssh'ing as `mindy`...
-![822c1fe89ff612dbf44deadd95dd666b.png](../_resources/822c1fe89ff612dbf44deadd95dd666b.png)
-![1cd34a1a5131c8ab34deb6c6922b96b9.png](../_resources/1cd34a1a5131c8ab34deb6c6922b96b9.png)
+![822c1fe89ff612dbf44deadd95dd666b.png](../_resources/822c1fe89ff612dbf44deadd95dd666b-1.png)
+![1cd34a1a5131c8ab34deb6c6922b96b9.png](../_resources/1cd34a1a5131c8ab34deb6c6922b96b9-1.png)
 
 And we get a reverse shell as `mindy`, which I now realize doesn't do us much good if we already had credentials... We could just use a regular ssh session.  Looking back at the exploit details, this makes sense since we get a shell as the user that logs in. Either way, that was a fun little exploit but I think gaining access to the admin tool for `mindy` credentials is all we needed.
 
-![295e8e9e2d6377371406a79743aae09d.png](../_resources/295e8e9e2d6377371406a79743aae09d.png)
+![295e8e9e2d6377371406a79743aae09d.png](../_resources/295e8e9e2d6377371406a79743aae09d-1.png)
 
 I notice we are using `rbash` for our shell and it looks certain commands such as `cd` are restricted. We also notice a `bin` directory owned by `mindy` and it would be nice to peek inside but with `rbash` doing its job by restricting things I don't think that is going to happen.
-![45f7b75acb5fa2302d3925a78afd7bfa.png](../_resources/45f7b75acb5fa2302d3925a78afd7bfa.png)
+![45f7b75acb5fa2302d3925a78afd7bfa.png](../_resources/45f7b75acb5fa2302d3925a78afd7bfa-1.png)
 
 Back to the reverse shell! My thinking is that we can bypass the `rbash` shell and use our own reverse shell to talk to the TTY. So I go ahead and rerun `50347.py` and get the reverse shell back as `mindy` followed by testing `cd` again.
 
-![066b638fff1bdde781e98a867d413ee7.png](../_resources/066b638fff1bdde781e98a867d413ee7.png)
+![066b638fff1bdde781e98a867d413ee7.png](../_resources/066b638fff1bdde781e98a867d413ee7-1.png)
 
 And like magic, we `cd` into `/home/mindy/bin` and find three symlinks pointing to common binaries which are all owned by `root` with `777` permissions. We can probably use this to our advantage, although I went ahead and `cd`'d to `/dev/shm`, transferred `linpeas.sh`, and ran the script.
 
 Some things to point out:
 
 1.) There is supposedly a Windows `printers.xml` file under something called `gutenprint`.
-![29a9f2c242395b10f7aa689224b092d9.png](../_resources/29a9f2c242395b10f7aa689224b092d9.png)
+![29a9f2c242395b10f7aa689224b092d9.png](../_resources/29a9f2c242395b10f7aa689224b092d9-1.png)
 
 2.) Readable and executable `keyrings` file for `root`.
-![31320ae82f3842d06cb253059f26874d.png](../_resources/31320ae82f3842d06cb253059f26874d.png)
+![31320ae82f3842d06cb253059f26874d.png](../_resources/31320ae82f3842d06cb253059f26874d-1.png)
 
 3.) Possible private SSH keys were found? Not sure what this is.
-![ee4860878439279c8d46e6e95181dc81.png](../_resources/ee4860878439279c8d46e6e95181dc81.png)
+![ee4860878439279c8d46e6e95181dc81.png](../_resources/ee4860878439279c8d46e6e95181dc81-1.png)
 
 4.) There is a VNC file
-![ecc18cbf537b038cdd39fee3485feee7.png](../_resources/ecc18cbf537b038cdd39fee3485feee7.png)
+![ecc18cbf537b038cdd39fee3485feee7.png](../_resources/ecc18cbf537b038cdd39fee3485feee7-1.png)
 
 5.) Some processes such as `cupsd` and `cups-browsed` running by `root`
-![2c6de7cd451c87d4882e12cbba75cffb.png](../_resources/2c6de7cd451c87d4882e12cbba75cffb.png)
-![b2e309e88bd9e22578110cc5cd0f2588.png](../_resources/b2e309e88bd9e22578110cc5cd0f2588.png)
+![2c6de7cd451c87d4882e12cbba75cffb.png](../_resources/2c6de7cd451c87d4882e12cbba75cffb-1.png)
+![b2e309e88bd9e22578110cc5cd0f2588.png](../_resources/b2e309e88bd9e22578110cc5cd0f2588-1.png)
 
 6.) Port 631 is open on localhost.
-![e263f2760834910bef19a61951fa97db.png](../_resources/e263f2760834910bef19a61951fa97db.png)
+![e263f2760834910bef19a61951fa97db.png](../_resources/e263f2760834910bef19a61951fa97db-1.png)
 
 7.) An interesting writable file `/opt/tmp.py`
-![09c19ef42b6298cc053ee64273f17772.png](../_resources/09c19ef42b6298cc053ee64273f17772.png)
-![79b18542434d2f5e3067506a66cb6743.png](../_resources/79b18542434d2f5e3067506a66cb6743.png)
+![09c19ef42b6298cc053ee64273f17772.png](../_resources/09c19ef42b6298cc053ee64273f17772-1.png)
+![79b18542434d2f5e3067506a66cb6743.png](../_resources/79b18542434d2f5e3067506a66cb6743-1.png)
 
 Now obviously some sort of printing stuff is involved here. After reading up on port 631/IPP we learn that this is typically used for CUPS as the standard printing system for many linux distros. First things first, we should set up an SSH tunnel to portforward on 631.
 
-![46f6b3f4e73134b4f607fc09d5d08478.png](../_resources/46f6b3f4e73134b4f607fc09d5d08478.png)
+![46f6b3f4e73134b4f607fc09d5d08478.png](../_resources/46f6b3f4e73134b4f607fc09d5d08478-1.png)
 
 The above command forwards traffic from port 631 on my localhost to port 631 of solidstate.htb which lets us access the CUPS landing page.
 
-![02c0168c1fa25e3136b57460f9ccf2e2.png](../_resources/02c0168c1fa25e3136b57460f9ccf2e2.png)
+![02c0168c1fa25e3136b57460f9ccf2e2.png](../_resources/02c0168c1fa25e3136b57460f9ccf2e2-1.png)
 
 We see CUPS version 2.2.1 is being used, but this doesn't seem to be vulnerable when checking with `searchsploit`. With that said, there is an Administration panel which requires authentication when attempting to click any of the buttons to manage or change something. Default passwords don't seem to work, nor do the credentials for `mindy` we found earlier.
-![528f0b712705564ac4abe74257640558.png](../_resources/528f0b712705564ac4abe74257640558.png)
+![528f0b712705564ac4abe74257640558.png](../_resources/528f0b712705564ac4abe74257640558-1.png)
 
 We do have access to, however, the configuration file. Config files can be key for certain exploits and although there is some good information there, I don't think this is the path to victory after spending some time on Google.
-![2587883a4dc9141cf1ea70856def9078.png](../_resources/2587883a4dc9141cf1ea70856def9078.png)
+![2587883a4dc9141cf1ea70856def9078.png](../_resources/2587883a4dc9141cf1ea70856def9078-1.png)
 
-What actually seems like our path to victory is CVE-2017-18190 which popped up during one of my searches.
+For now, I will step back and go back to linpeas findings -- specifically the `tmp.py` file.
+![e0b94df02818e2e66a9e6df7c727560c.png](../_resources/e0b94df02818e2e66a9e6df7c727560c.png)
+
+This script seems to be recursively removing everything from the `/tmp` directory. I am curious if there is a process or something invoking the script as `root`, so my first simple test is to create a test file in `/tmp` and then wait and see if it gets removed.
+![53223c9afc775a2ffa07918982f7d1cc.png](../_resources/53223c9afc775a2ffa07918982f7d1cc.png)
+
+And it does! It seems like this is probably ran every minute. I didn't see any cron jobs running this, so I will drop `pspy32s` on the box and see if we can find anything interesting.
+
+![cb32b5362d74a73e33929213776d6446.png](../_resources/cb32b5362d74a73e33929213776d6446.png)
+
+As suspected, `root` is executing `/opt/tmp.py`. Alright, this should be a pretty easy privilege escalation now that we know we can write to `/opt/tmp.py` and `root` executes it every minute. Let's just put a reverse shell in the python script so that when `root` executes it, we will get the shell back and effectively become `root`.
+
+Our dumb shell doesn't work well with text editors, so I upgrade the shell with `stty raw -echo; fg`. (ref: https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/)
+
+*BEFORE:*
+![c0003816c089c390ff51026fc7625015.png](../_resources/c0003816c089c390ff51026fc7625015.png)
+![a85055b7db6dd50dff729805eafcae38.png](../_resources/a85055b7db6dd50dff729805eafcae38.png)/
+
+*AFTER:*
+![74719a4f06281f1861a540134b857f88.png](../_resources/74719a4f06281f1861a540134b857f88.png)
+
+I used a python reverse shell via `import` at the top of the script, although we could've done this many other ways.
+(ref: https://highon.coffee/blog/reverse-shell-cheat-sheet/)
+
+Now, I'll set up a `nc` listener, save the script and wait for `root` to connect back to us.
+![5c915464df7eba4bfa58fc04e9f57da0.png](../_resources/5c915464df7eba4bfa58fc04e9f57da0.png)
+
+Within a minute or so we are `root`! Normally I would collect my flags and celebrate, but I feel like there is another privilege escalation method using CUPS, CVE-2017-18190. I'll look into this...
+
+
+![flags.png](../_resources/flags-2.png)
+
