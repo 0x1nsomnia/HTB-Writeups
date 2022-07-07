@@ -109,6 +109,61 @@ Nikto found a RFI through `info.php`
 + 1 host(s) tested
 ```
 
+## Feroxbuster
+#### Port 8080
+Not a whole lot to see -- it is all default Tomcat directories and files.
+```
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs => /docs/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/images => /docs/images/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples => /examples/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/api => /docs/api/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/architecture => /docs/architecture/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/config => /docs/config/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp => /examples/jsp/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/images => /examples/jsp/images/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/security => /examples/jsp/security/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/xml => /examples/jsp/xml/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/forward => /examples/jsp/forward/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/images/fonts => /docs/images/fonts/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/include => /examples/jsp/include/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/servlets => /examples/servlets/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/servlets/images => /examples/servlets/images/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/error => /examples/jsp/error/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/dates => /examples/jsp/dates/
+302      GET        0l        0w        0c http://kotarak.htb:8080/manager => /manager/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/sessions => /examples/jsp/sessions/
+302      GET        0l        0w        0c http://kotarak.htb:8080/manager/images => /manager/images/
+401      GET       63l      289w     2473c http://kotarak.htb:8080/manager/html
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/architecture/startup => /docs/architecture/startup/
+401      GET       63l      289w     2473c http://kotarak.htb:8080/manager/text
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/cal => /examples/jsp/cal/
+401      GET       63l      289w     2473c http://kotarak.htb:8080/manager/status
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/plugin => /examples/jsp/plugin/
+200      GET       23l       45w      627c http://kotarak.htb:8080/examples/jsp/security/protected
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/colors => /examples/jsp/colors/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/num => /examples/jsp/num/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/appdev => /docs/appdev/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/plugin/applet => /examples/jsp/plugin/applet/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/appdev/sample => /docs/appdev/sample/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/appdev/sample/docs => /docs/appdev/sample/docs/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/appdev/sample/web => /docs/appdev/sample/web/
+302      GET        0l        0w        0c http://kotarak.htb:8080/docs/appdev/sample/src => /docs/appdev/sample/src/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/checkbox => /examples/jsp/checkbox/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/snp => /examples/jsp/snp/
+302      GET        0l        0w        0c http://kotarak.htb:8080/examples/jsp/async => /examples/jsp/async/
+```
+
+#### Port 60000
+Nothing helpful as we discovered `info.php` from Nikto.
+```
+200      GET     1110l     5668w        0c http://kotarak.htb:60000/info.php
+200      GET       76l      130w     1169c http://kotarak.htb:60000/
+403      GET       11l       32w      293c http://kotarak.htb:60000/.php
+200      GET       76l      130w     1169c http://kotarak.htb:60000/index.php
+200      GET        2l        0w        2c http://kotarak.htb:60000/url.php
+403      GET       11l       32w      302c http://kotarak.htb:60000/server-status
+```
+
 ## Website
 #### Port 8080
 
@@ -132,4 +187,28 @@ This page appears to be a "private" search engine of some sort. It actually does
 Rembering that Nikto flagged an RFI via the `info.php`, I check to see if this works although after testing and reviewing `info.php`, I found that the options for LFI/RFI are actually set to off, so that seems to be a no-go...
 ![98d9aef521be1b90b5b35c05ae3c29ba.png](../_resources/98d9aef521be1b90b5b35c05ae3c29ba.png)
 
-![985d7f7e173aeb070d11750ef60a358b.png](../_resources/985d7f7e173aeb070d11750ef60a358b.png)
+There is still something weird about this page, so next I try for SSRF related payloads. I am using this list for reference:
+https://pravinponnusamy.medium.com/ssrf-payloads-f09b2a86a8b4
+
+Testing with a `file://` schema returns a "try harder" message.
+![9f694afeac85bc7a6afea9ad7394b37a.png](../_resources/9f694afeac85bc7a6afea9ad7394b37a.png)
+
+It seems like this message is returned probably based on a blacklist looking for `file` and other keywords. After playing around with some other payloads, we can see that we can access the server localhost with a specified port.
+![20a46db48ae7815794244914b332b742.png](../_resources/20a46db48ae7815794244914b332b742.png)
+
+This makes me curious if there are any services running on localhost, so I fuzz for all ports...
+![2757a1f75ef5f4978bf174665816161e.png](../_resources/2757a1f75ef5f4978bf174665816161e.png)
+![9160ee01486f8007b2589778a5cd3670.png](../_resources/9160ee01486f8007b2589778a5cd3670.png)
+![097799245af4d1255e134d1f438ed59d.png](../_resources/097799245af4d1255e134d1f438ed59d.png)
+![b14be501f1d122e90d3bedfedea6456b.png](../_resources/b14be501f1d122e90d3bedfedea6456b.png)
+![407ed1fa97b094ede631d1ead4c41faf.png](../_resources/407ed1fa97b094ede631d1ead4c41faf.png)
+![8dfd709b41b48ff010035d26fcb984d0.png](../_resources/8dfd709b41b48ff010035d26fcb984d0.png)
+![05d0eda43aed3adbdc975e9b66078fe5.png](../_resources/05d0eda43aed3adbdc975e9b66078fe5.png)
+
+ ...and find tons!
+
+This widens our attack surface TONS! Ports 320 and 888 are most interesting to me, but I will investigate the others as well to make sure I am not missing anything. We also now know there seems to be a MySQL service running on localhost port 3306.
+
+
+
+
