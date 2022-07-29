@@ -77,6 +77,18 @@ A quick searchsploit search on this returns a potential shiny RCE vuln:
 
 Since our attack surface seems relatively small and there doesn't seem to be anything left to enumerate, I'll go ahead and go straight to the exploit...
 
-From some brief reading on HFS, it looks like we can abuse template macros to achieve remote command execution. I ended up using `39161.py` and set `ip_addr` and `local_port` to the appropriate values.
+From some brief reading on HFS, it looks like we can abuse HFS's template macros to achieve remote command execution. I thought this was a great writeup on explaining and testing this vulnerability:
+https://vk9-sec.com/hfs-code-execution-cve-2014-6287/
 
-![2aef674c1ae2d08aba4a96ef068ae2d8.png](../_resources/2aef674c1ae2d08aba4a96ef068ae2d8.png)
+Before I use an exploit script, my curious self first tests to make sure we can ping back to my host. I used Burp and set things up the same way as the author of the above page. I also tried this without an absolute path to powershell and instead just starting the command with ping, but that didn't work, so it looks like an absolute path to powershell is needed.
+
+![bd47aa22b6e581673ed49494777848ef.png](../_resources/bd47aa22b6e581673ed49494777848ef.png)
+
+![ac36cce1ae3aa181d9a6ef5fa240beab.png](../_resources/ac36cce1ae3aa181d9a6ef5fa240beab.png)
+
+Now that we have confirmed command execution, I'll modify `49584.py` found from searchsploit. This exploit in particular also spawns a listener on our host for us which is kind of weird to me but it works...
+
+![f2cffa7412ab432c3dbd2bf82e62ef8a.png](../_resources/f2cffa7412ab432c3dbd2bf82e62ef8a.png)
+
+We get a shell back as user `kostas`.
+
