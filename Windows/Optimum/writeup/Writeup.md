@@ -80,15 +80,21 @@ Since our attack surface seems relatively small and there doesn't seem to be any
 From some brief reading on HFS, it looks like we can abuse HFS's template macros to achieve remote command execution. I thought this was a great writeup on explaining and testing this vulnerability:
 https://vk9-sec.com/hfs-code-execution-cve-2014-6287/
 
-Before I use an exploit script, my curious self first tests to make sure we can ping back to my host. I used Burp and set things up the same way as the author of the above page. I also tried this without an absolute path to powershell and instead just starting the command with ping, but that didn't work, so it looks like an absolute path to powershell is needed.
+Before we try for a reverse shell I first test for command execution by pinging our local machine from the victim. I used Burp and set things up the same way as the author of the above page. I also tried this without an absolute path to powershell and instead just starting the command with `ping`, but that didn't work, so it looks like an absolute path to powershell on the box is needed.
 
 ![bd47aa22b6e581673ed49494777848ef.png](../_resources/bd47aa22b6e581673ed49494777848ef.png)
 
 ![ac36cce1ae3aa181d9a6ef5fa240beab.png](../_resources/ac36cce1ae3aa181d9a6ef5fa240beab.png)
 
-Now that we have confirmed command execution, I'll modify `49584.py` found from searchsploit. This exploit in particular also spawns a listener on our host for us which is kind of weird to me but it works...
+Now that we see pings back and confirmed command execution, I'll spawn a reverse shell using the `Invoke-PowerShellTcp.ps1` script from here:
+https://github.com/samratashok/nishang/blob/master/Shells/Invoke-PowerShellTcp.ps1
 
-![f2cffa7412ab432c3dbd2bf82e62ef8a.png](../_resources/f2cffa7412ab432c3dbd2bf82e62ef8a.png)
+At the bottom of the script, we call the `Invoke-PowerShellTcp` function with the appropriate arguments. In this case I have my python http.server served on port 7331 and then my nc listener on port 1337 to catch the reverse shell. Url encode the payload in Burp and then pull the trigger!
 
-We get a shell back as user `kostas`.
+![psrshell.png](../_resources/psrshell.png)
 
+![c563eb16faf1ab412a5ffaa4d69d071b.png](../_resources/c563eb16faf1ab412a5ffaa4d69d071b.png)
+
+This gets us a shell back as user `kostas`! Now I'll drop winPEAS on the box and execute it.
+
+![12cb8e29332b55058d2b9281a0d0363a.png](../_resources/12cb8e29332b55058d2b9281a0d0363a.png)
