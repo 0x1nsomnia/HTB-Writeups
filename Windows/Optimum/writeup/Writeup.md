@@ -75,18 +75,18 @@ There isn't a whole lot to see, although it looks like there is login functional
 A quick searchsploit search on this returns a potential shiny RCE vuln:
 ![7a402f60104f5211ef3293cdc8a41ac0.png](../_resources/7a402f60104f5211ef3293cdc8a41ac0.png)
 
-Since our attack surface seems relatively small and there doesn't seem to be anything left to enumerate, I'll go ahead and go straight to the exploit...
+I'll go ahead and go straight to the exploit...
 
 From some brief reading on HFS, it looks like we can abuse HFS's template macros to achieve remote command execution. I thought this was a great writeup on explaining and testing this vulnerability:
 https://vk9-sec.com/hfs-code-execution-cve-2014-6287/
 
-Before we try for a reverse shell I first test for command execution by pinging our local machine from the victim. I used Burp and set things up the same way as the author of the above page. I also tried this without an absolute path to powershell and instead just starting the command with `ping`, but that didn't work, so it looks like an absolute path to powershell on the box is needed.
+Before we try for a reverse shell I first test for command execution by pinging our local machine from the victim. I used Burp and set things up the same way as the author of the above page. I also tried this without an absolute path to powershell and instead just starting the command with `ping`, but that didn't work, so it looks like an absolute path to powershell on the remote box is needed.
 
 ![bd47aa22b6e581673ed49494777848ef.png](../_resources/bd47aa22b6e581673ed49494777848ef.png)
 
 ![ac36cce1ae3aa181d9a6ef5fa240beab.png](../_resources/ac36cce1ae3aa181d9a6ef5fa240beab.png)
 
-Now that we see pings back and confirmed command execution, I'll spawn a reverse shell using the `Invoke-PowerShellTcp.ps1` script from here:
+Now that we see ping replies back which confirms command execution, I'll spawn a reverse shell using the `Invoke-PowerShellTcp.ps1` script from here:
 https://github.com/samratashok/nishang/blob/master/Shells/Invoke-PowerShellTcp.ps1
 
 At the bottom of the script, we call the `Invoke-PowerShellTcp` function with the appropriate arguments. In this case I have my python http.server served on port 7331 and then my nc listener on port 1337 to catch the reverse shell. Url encode the payload in Burp and then pull the trigger!
@@ -98,3 +98,20 @@ At the bottom of the script, we call the `Invoke-PowerShellTcp` function with th
 This gets us a shell back as user `kostas`! Now I'll drop winPEAS on the box and execute it.
 
 ![12cb8e29332b55058d2b9281a0d0363a.png](../_resources/12cb8e29332b55058d2b9281a0d0363a.png)
+
+![ed6b4e46f72a257a8bc0d85cd2efa223.png](../_resources/ed6b4e46f72a257a8bc0d85cd2efa223.png)
+
+`kostas::OPTIMUM:1122334455667788:29c9ad2d5a99f949c2a44a702329059f:01010000000000000d8ea24bf8a9d8013e64574dce49356800000000080030003000000000000000000000000020000050abec8413f98252614d42be2980cf2099f56c94384239948c0180d36afe500a0a00100000000000000000000000000000000000090000000000000000000000`
+
+![f46739deb1bcf2a125013ca607a5df58.png](../_resources/f46739deb1bcf2a125013ca607a5df58.png)
+
+
+![fbf691f8e8c578cb6dd05084cacdb822.png](../_resources/fbf691f8e8c578cb6dd05084cacdb822.png)
+
+![e8c159d8ab1217b5f25df3d3df29bcd1.png](../_resources/e8c159d8ab1217b5f25df3d3df29bcd1.png)
+
+![d9b81aaa93648ad1471a21a512dd2fba.png](:/849e35b24bbb40dabd65ef29ac3a9649
+
+![4c5c07c88c53b829b2798b740dda8df4.png](../_resources/4c5c07c88c53b829b2798b740dda8df4.png)
+
+![5a74dabd6599979fbb7d720410b6ad33.png](../_resources/5a74dabd6599979fbb7d720410b6ad33.png)
