@@ -65,9 +65,6 @@ Not much from Nikto (the XSS finding was inaccurate)
 + 1 host(s) tested
 ```
 
-## Feroxbuster
-no hits...
-
 ## Website
 There isn't a whole lot to see, although it looks like there is login functionality and file management of some sort. We also see that this is `HttpFileServer 2.3`
 ![4d42fa6f4af03ce0e3db68b3659172ce.png](../_resources/4d42fa6f4af03ce0e3db68b3659172ce.png)
@@ -99,19 +96,30 @@ This gets us a shell back as user `kostas`! Now I'll drop winPEAS on the box and
 
 ![12cb8e29332b55058d2b9281a0d0363a.png](../_resources/12cb8e29332b55058d2b9281a0d0363a.png)
 
-![ed6b4e46f72a257a8bc0d85cd2efa223.png](../_resources/ed6b4e46f72a257a8bc0d85cd2efa223.png)
+To make a long story short, I spent forever trying to find holes using the output from WinPeas, only to find out that the intended route of privesc was through Sherlock. Sherlock is now deprecated, and was replaced with Watson. WinPeas DOES use Watson in its enumeration, but because this box is so old, the .NET version required by Watson is not met.
 
-`kostas::OPTIMUM:1122334455667788:29c9ad2d5a99f949c2a44a702329059f:01010000000000000d8ea24bf8a9d8013e64574dce49356800000000080030003000000000000000000000000020000050abec8413f98252614d42be2980cf2099f56c94384239948c0180d36afe500a0a00100000000000000000000000000000000000090000000000000000000000`
+What does this all mean? Well, for simplicity and sake of staying on course of the intended privilege escalation route, we will instead use the deprecated Sherlock powershell script from here:
+https://raw.githubusercontent.com/rasta-mouse/Sherlock/master/Sherlock.ps1
 
-![f46739deb1bcf2a125013ca607a5df58.png](../_resources/f46739deb1bcf2a125013ca607a5df58.png)
+We just need to be sure to include the `Find-AllVulns` function call at the end of the script like so:
 
+![2ccddf3d44db475d392d051c926b9161.png](../_resources/2ccddf3d44db475d392d051c926b9161.png)
 
-![fbf691f8e8c578cb6dd05084cacdb822.png](../_resources/fbf691f8e8c578cb6dd05084cacdb822.png)
+And then download and execute it...
 
-![e8c159d8ab1217b5f25df3d3df29bcd1.png](../_resources/e8c159d8ab1217b5f25df3d3df29bcd1.png)
+![3aa4f6f7b930380c9d99ac4651420982.png](../_resources/3aa4f6f7b930380c9d99ac4651420982.png)
 
-![d9b81aaa93648ad1471a21a512dd2fba.png](:/849e35b24bbb40dabd65ef29ac3a9649
+We have quite a few options! I ignore the vulns that sound potentially complicated and see one that stood out to me:
 
-![4c5c07c88c53b829b2798b740dda8df4.png](../_resources/4c5c07c88c53b829b2798b740dda8df4.png)
+![cc7ece652b89e8cebd95cd8ccd5925e1.png](../_resources/cc7ece652b89e8cebd95cd8ccd5925e1.png)
 
-![5a74dabd6599979fbb7d720410b6ad33.png](../_resources/5a74dabd6599979fbb7d720410b6ad33.png)
+Just like before, I download the poc on my host, followed by downloading and executing it on the box:
+
+![system.png](../_resources/system.png)
+
+Aside from the initial headache of deciding to use Sherlock, this was a super smooth and easy privilege escalation which required absolutely zero script modifications or handy-work!
+
+Time to collect our loot and move on to the next box :)
+
+![loot.png](../_resources/loot.png)
+
